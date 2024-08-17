@@ -1,0 +1,4 @@
+/node_modules
+/.next
+/devops
+/gitlab-ci.yaml
