@@ -1,6 +1,6 @@
 ---
 - name: Deploy Next.js Docker container
-  host: all
+  hosts: all
   become: yes 
   vars:
     IMAGE_NAME: "{{ imgae_name }}"
