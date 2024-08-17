@@ -1,0 +1,71 @@
+name: Docker with Ansible and CI/CD
+
+env: 
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+  IMAGE_NAME: ${{ vars.IMAGE_NAME }}
+  TARGET_HOST: ${{ vars.TARGET_HOST }}
+  SSH_USER: ${{vars.SSH_SUER }}
+  DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
+  CONTAINER_NAME: ${{ vars.CONTAINER_NAME }}
+  
+on: 
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Login to Docker Hub
+        run: |
+          echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin 
+
+      - name: Build Docker Image
+        run: docker build -t $IMAGE_NAME:latest .
+
+      - name: Push Docker Image 
+        run: docker push $IMAGE_NAME:latest
+
+  deploy: 
+    needs: build
+    runs-on: unbuntu:latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2 
+      
+      - name: Create SSH key 
+        run: |
+          echo "$SSH_PRIVATE_KEY" > private.key
+          sudo chmod 400 private.key
+          eval 'ssh-agent -s'
+          ssh-add private.key
+          mkdir -p ~/.ssh
+          touch ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+          ssh-keyscan -H $TARGET_HOST >> ~/.ssh/known_hosts
+
+      - name: Set up Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Create inventory file
+        run : |
+          echo "webnode1 ansible_host=$TARGET_HOST ansible_user=SSH_USER ansible_ssh_private_key_file=private.key" > inventory
+
+      - name: Deploy with Ansible
+        run: |
+          ansible-playbook -i inventory \
+          --extra-vars "image_name=$IMAGE_NAME" \
+          --etra-vars "domain_name=$DOMAIN_NAME" \
+          --etra-vars "container_name=$CONTAINER_NAME" \
+          --etra-vars "dockerhub_username=$DOCKERHUB_USERNAME" \
+          --etra-vars "dockerhub_toker=$ DOCKERHUB_TOKEN" \
+          --etra-vars "ansible_ssh_common_args='-o StrictHostKeyChecking=no'" \
+          devops/playbook.yaml
