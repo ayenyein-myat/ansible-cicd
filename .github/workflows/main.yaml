@@ -67,6 +67,6 @@ jobs:
           --extra-vars "domain_name=$DOMAIN_NAME" \
           --extra-vars "container_name=$CONTAINER_NAME" \
           --extra-vars "dockerhub_username=$DOCKERHUB_USERNAME" \
-          --extra-vars "dockerhub_toker=$ DOCKERHUB_TOKEN" \
+          --extra-vars "dockerhub_toker=$DOCKERHUB_TOKEN" \
           --extra-vars "ansible_ssh_common_args='-o StrictHostKeyChecking=no'" \
           devops/playbook.yaml
