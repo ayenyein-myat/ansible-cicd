@@ -7,7 +7,7 @@ env:
 
   IMAGE_NAME: ${{ vars.IMAGE_NAME }}
   TARGET_HOST: ${{ vars.TARGET_HOST }}
-  SSH_USER: ${{vars.SSH_SUER }}
+  SSH_USER: ${{vars.SSH_USER }}
   DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
   CONTAINER_NAME: ${{ vars.CONTAINER_NAME }}
   
