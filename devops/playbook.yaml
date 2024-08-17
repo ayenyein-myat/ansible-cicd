@@ -1,0 +1,93 @@
+---
+- name: Deploy Next.js Docker container
+  host: all
+  become: yes 
+  vars:
+    IMAGE_NAME: "{{ imgae_name }}"
+    DOCKERHUB_USERNAME: "{{ dockerhub_username }}"
+    DOCKERHUB_TOKEN: "{{ dockerhub_token }}"
+    DOMAIN_NAME: "{{ domain_name }}"
+    CONTAINER_NAME: "{{ container_name }}"
+
+  tasks:
+    - name: Run Apt Update
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt: 
+        name: docker.io
+        state: present
+
+    - name: Start Docker Service
+      service:
+        name: docker
+        state: started 
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: persent 
+    
+    - name: Start Nginx Service
+      service:
+        name: nginx
+        state: started
+    
+    - name: Login to Docker Hub with token
+      docker_login:
+        username: "{{ DOCKERHUB_USERNAME }}"
+        password: "{{ DOCKERHUB_TOKEN }}"
+
+    - name: Pull Docker Image 
+      docker_image: 
+        name: "{{ CONTAINER_NAME }}"
+        source: pull
+
+    - name: Run Docker container
+      docker_container:
+        name: "{{ CONTAINER_NAME }}"
+        image: "{{ IMAGE_NAME }}"
+        state: started
+        pull: true
+        restart_policy: always
+        ports:
+          - "3001:3000"
+    
+    - name: Wait for container to start
+      wait_for:
+        host: localhost
+        port: 3001
+        delay: 5
+        timeout: 60
+
+    - name: Check Nginx config file exists
+      stat:
+        path: "/etc/nginx/sites-available/{{ DOMAIN_NAME }}"
+      register: nginx_config
+    
+    - name: Configure Nginx
+      template:
+        src: nginx.conf.j2
+        dest: "/etc/nginx/sites-available/{{ DOMAIN_NAME }}"
+      when: not nginx_config.stat.exists
+      notify: Reload Nginx 
+
+    - name: Enable Nginx Site
+      file: 
+        src: "/etc/nginx/sites-available/{{ DOMAIN_NAME }}"
+        dest: "/etc/nginx/sites-enabled/{{ DOMAIN_NAME }}"
+        state: link
+      when: not nginx_config.stat.exists
+     
+
+  handlers:
+    - name: Reload Nginx 
+      service:
+        name: nginx
+        state: reloaded 
+
+
+
+
+    
