@@ -27,7 +27,7 @@
     - name: Install Nginx
       apt:
         name: nginx
-        state: persent 
+        state: present 
     
     - name: Start Nginx Service
       service:
